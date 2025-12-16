@@ -1,6 +1,7 @@
 # Fil-Rouge-AAP-2025-ECL
 
-/project-root
+## Files
+/main
 
 ├── src/                # .c files (main programs, graph logic)
 
@@ -11,3 +12,18 @@
 ├── Makefile            # Compilation script
 
 └── .gitignore          # Git configuration
+
+## Deliverables Checklist
+Source Code: Clean, commented, and compiling with make.
+
+Report (Max 15 pages):
+
+Introduction & Conclusion.
+
+Diagrams of data structures.
+
+Performance Analysis: Matrix vs List comparison.
+
+Team organization & difficulties faced.
+
+Presentation: PDF Slides for a 25-minute defense (Demo included).
