@@ -16,7 +16,7 @@
 ## Deliverables Checklist
 Source Code: Clean, commented, and compiling with make.
 
-Report (Max 15 pages):
+Report (Max 15 pages): https://docs.google.com/document/d/1AJ3HcjxlrycodCDnYk9pm_LW7biWzXoWhYhFQMspahQ/edit?usp=sharing
 
 Introduction & Conclusion.
 
