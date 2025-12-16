@@ -1,0 +1,41 @@
+# ===========================
+# C Compilation Ignored Files
+# ===========================
+
+# Intermediate object files
+*.o
+*.obj
+
+# Precompiled headers
+*.gch
+
+# Executables (Windows)
+*.exe
+
+# Executables (Linux/Mac)
+*.out
+*.app
+
+# ===========================
+# Specific Project Binaries
+# ===========================
+# Ignore the specific output programs requested in the PDF
+fil_rouge_1
+fil_rouge_2
+fil_rouge_3
+
+# ===========================
+# System & IDE Files
+# ===========================
+
+# Mac OS generated files
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+
+# VS Code settings folder
+.vscode/
+
+# IntelliJ / JetBrains settings
+.idea/
