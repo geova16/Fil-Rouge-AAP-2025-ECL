@@ -1,0 +1,10 @@
+4 n
+start
+stop
+working
+paused
+paused working
+start working
+working paused
+start stop
+working stop

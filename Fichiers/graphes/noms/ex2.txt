@@ -1,0 +1,44 @@
+12 n
+
+a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+k
+l
+
+a b
+
+b c
+
+c d
+c b
+c h
+
+d e
+
+e d
+e f
+
+f e
+f g
+
+h l
+
+i l
+
+j l
+
+k l
+
+l h
+l i
+l j
+l k
+
