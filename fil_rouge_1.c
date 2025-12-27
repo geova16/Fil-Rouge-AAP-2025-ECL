@@ -6,9 +6,15 @@
 #include "graph.h"
 
 /*
-Compilação (duas versões exigidas pelo projeto):
-  gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=1 -o fil_rouge_1_matrix
-  gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge_1_list
+  Programme 1 — Conversion d'un graphe (format 1 ou 2) vers un fichier DOT (Graphviz)
+
+  Deux versions attendues (représentation interne du graphe) :
+    - Matrice d'adjacence  : USE_MATRIX=1
+    - Listes d'adjacence   : USE_MATRIX=0
+
+  Compilation :
+    gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=1 -o fil_rouge_1_matrix
+    gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge_1_list
 */
 
 #ifndef USE_MATRIX
@@ -17,14 +23,23 @@ Compilação (duas versões exigidas pelo projeto):
 
 #define BUF_SZ 4096
 
+/* =========================
+   Aide / Usage
+   ========================= */
+
 static void usage(const char *prog) {
   fprintf(stderr,
           "Usage: %s [-i <graph_file>] [-o <dot_file>]\n"
-          "  -i <graph_file> : input graph (default stdin)\n"
-          "  -o <dot_file>   : output DOT (default stdout)\n",
+          "  -i <graph_file> : fichier de graphe en entree (defaut: stdin)\n"
+          "  -o <dot_file>   : fichier DOT en sortie (defaut: stdout)\n",
           prog);
 }
 
+/* =========================
+   Utilitaires de lecture
+   ========================= */
+
+/* Retourne 1 si la ligne est vide/blanche (espaces, tabulations, etc.), sinon 0 */
 static int is_blank_line(const char *s) {
   while (*s) {
     if (!isspace((unsigned char)*s)) return 0;
@@ -33,7 +48,7 @@ static int is_blank_line(const char *s) {
   return 1;
 }
 
-/* Lê a primeira linha não vazia do stream */
+/* Lit la première ligne non vide du flux `in` dans `buf`. Retourne 1 si OK, 0 si EOF. */
 static int read_first_nonempty_line(FILE *in, char *buf, size_t buflen) {
   while (fgets(buf, (int)buflen, in) != NULL) {
     if (!is_blank_line(buf)) return 1;
@@ -41,9 +56,10 @@ static int read_first_nonempty_line(FILE *in, char *buf, size_t buflen) {
   return 0;
 }
 
-/* Detecta formato:
-   - se primeira linha for "N n" (n ou N), é formato 2
-   - senão, formato 1
+/*
+  Détection du format à partir de la première ligne non vide :
+    - "N n" (ou "N N")  => format 2 (noms)
+    - "N"               => format 1 (numéros)
 */
 static int detect_format_from_header(const char *line) {
   int N = 0;
@@ -53,16 +69,25 @@ static int detect_format_from_header(const char *line) {
   return 1;
 }
 
-/* Para stdin: reconstrói um stream (tmpfile) com header + resto do stdin,
-   para poder passar tudo ao leitor do grafo (porque stdin não dá rewind). */
+/*
+  Cas stdin : on ne peut pas faire rewind(stdin).
+  On reconstruit donc un flux temporaire (tmpfile) contenant :
+    - la ligne d'en-tête déjà lue
+    - le reste du stdin
+  Puis on repasse ce flux au lecteur du module graph.c.
+*/
 static FILE *rebuild_stream_with_header_and_rest(const char *header_line, FILE *in) {
   FILE *tmp = tmpfile();
   if (!tmp) return NULL;
 
+  /* Réécrit exactement la ligne d'en-tête */
   fputs(header_line, tmp);
+
+  /* Assure un '\n' final si absent */
   size_t L = strlen(header_line);
   if (L == 0 || header_line[L - 1] != '\n') fputc('\n', tmp);
 
+  /* Copie le reste de stdin */
   char block[8192];
   size_t nread;
   while ((nread = fread(block, 1, sizeof(block), in)) > 0) {
@@ -73,7 +98,11 @@ static FILE *rebuild_stream_with_header_and_rest(const char *header_line, FILE *
   return tmp;
 }
 
-/* Escape básico para nomes no DOT */
+/* =========================
+   Écriture DOT
+   ========================= */
+
+/* Échappement minimal pour une chaîne DOT (gère " et \) */
 static void dot_print_escaped(FILE *out, const char *s) {
   fputc('"', out);
   for (const char *p = s; *p; p++) {
@@ -89,6 +118,7 @@ struct dot_ctx {
   t_vertex from;
 };
 
+/* Callback appelé pour chaque successeur `to` du sommet `from` */
 static void dot_succ_cb(t_vertex to, void *ctx_void) {
   struct dot_ctx *ctx = (struct dot_ctx*)ctx_void;
 
@@ -106,6 +136,7 @@ static void dot_succ_cb(t_vertex to, void *ctx_void) {
   }
 }
 
+/* Produit le graphe au format DOT */
 static void write_dot(FILE *out, const t_graph *g) {
   fprintf(out, "digraph nom_du_graphe {\n");
 
@@ -121,10 +152,15 @@ static void write_dot(FILE *out, const t_graph *g) {
   fprintf(out, "}\n");
 }
 
+/* =========================
+   Main
+   ========================= */
+
 int main(int argc, char **argv) {
   const char *in_path = NULL;
   const char *out_path = NULL;
 
+  /* --- Parsing des arguments --- */
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-i") == 0) {
       if (i + 1 >= argc) { usage(argv[0]); return 1; }
@@ -141,6 +177,7 @@ int main(int argc, char **argv) {
   FILE *in = stdin;
   FILE *out = stdout;
 
+  /* --- Ouverture des fichiers --- */
   if (in_path) {
     in = fopen(in_path, "r");
     if (!in) { perror("fopen -i"); return 1; }
@@ -154,10 +191,10 @@ int main(int argc, char **argv) {
     }
   }
 
-  /* Lê header para detectar formato */
+  /* --- Lecture de l'en-tête pour détecter le format --- */
   char header[BUF_SZ];
   if (!read_first_nonempty_line(in, header, sizeof(header))) {
-    fprintf(stderr, "Input vazio.\n");
+    fprintf(stderr, "Input vide.\n");
     if (in != stdin) fclose(in);
     if (out != stdout) fclose(out);
     return 1;
@@ -166,18 +203,22 @@ int main(int argc, char **argv) {
   int fmt = detect_format_from_header(header);
   t_graph *g = NULL;
 
+  /* --- Lecture du graphe (format 1 ou 2) via votre module --- */
   if (in == stdin) {
     FILE *tmp = rebuild_stream_with_header_and_rest(header, in);
     if (!tmp) {
-      fprintf(stderr, "Falha ao criar tmpfile() para stdin.\n");
+      fprintf(stderr, "Erreur: tmpfile() a échoué (stdin).\n");
       if (out != stdout) fclose(out);
       return 1;
     }
+
     g = (fmt == 2)
         ? graph_read_format2_file(tmp, (t_bool)USE_MATRIX)
         : graph_read_format1_file(tmp, (t_bool)USE_MATRIX);
+
     fclose(tmp);
   } else {
+    /* Fichier : on peut rewind et relire depuis le début */
     rewind(in);
     g = (fmt == 2)
         ? graph_read_format2_file(in, (t_bool)USE_MATRIX)
@@ -185,16 +226,19 @@ int main(int argc, char **argv) {
   }
 
   if (!g) {
-    fprintf(stderr, "Falha ao ler o grafo.\n");
+    fprintf(stderr, "Erreur: lecture du graphe impossible.\n");
     if (in != stdin) fclose(in);
     if (out != stdout) fclose(out);
     return 1;
   }
 
+  /* --- Écriture DOT --- */
   write_dot(out, g);
 
+  /* --- Nettoyage --- */
   graph_free(g);
   if (in != stdin) fclose(in);
   if (out != stdout) fclose(out);
+
   return 0;
 }
