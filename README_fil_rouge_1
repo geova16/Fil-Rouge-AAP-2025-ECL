@@ -172,4 +172,3 @@ digraph nom_du_graphe {
   "B" -> "C";
   "C" -> "A";
 }
-```
