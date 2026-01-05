@@ -118,6 +118,27 @@ gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge
 ```bash
 ./fil_rouge_1_list < ex1.txt > graphe.dot
 ```
+#### 7.2.1 Utilisation via le clavier (Saisie manuelle)
+
+Il est possible d'exécuter le programme et de saisir les données du graphe directement dans le terminal.
+
+### Étapes à suivre :
+1. Lancez le programme sans l'argument `-i` :
+   ```bash
+   ./fil_rouge_1_matrix
+   ```
+2. Tapez l'en-tête (ex: 3 ou 3 n) et appuyez sur Entrée.
+
+3. Saisissez vos arêtes (ex: 0 1), une par ligne.
+
+4. Pour terminer la saisie et générer le fichier :
+
+Sur Windows : Appuyez sur Ctrl + Z puis Entrée.
+
+Sur Linux / macOS : Appuyez sur Ctrl + D.
+
+⚠️ Utilisateurs Windows (IMPORTANT) : Si vous obtenez l'erreur tmpfile() a échoué, vous devez exécuter votre terminal (PowerShell ou CMD) en tant qu'Administrateur. Cela est nécessaire pour que le programme puisse créer le fichier temporaire requis pour traiter la saisie manuelle.
+
 ### 7.3 Arguments
 - `-i <graph_file>` : fichier d’entrée (défaut : `stdin`)
 - `-o <dot_file>` : fichier de sortie (défaut : `stdout`)
