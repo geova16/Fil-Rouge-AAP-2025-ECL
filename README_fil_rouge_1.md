@@ -172,3 +172,21 @@ digraph nom_du_graphe {
   "B" -> "C";
   "C" -> "A";
 }
+```
+# 9 Exécution par lots
+Voici comment traiter tous les fichiers d'un dossier en une seule commande, selon votre système d'exploitation.
+
+## 9.1 Sur Windows (PowerShell)
+Idéal pour le terminal par défaut de VS Code sur Windows.
+```c
+Get-ChildItem "Fichiers/graphes/numeros/*.txt" | ForEach-Object {
+    ./fil_rouge_1_matrix -i $_.FullName -o "output/$($_.BaseName).dot"
+}
+```
+## 9.2 Sur Linux
+```bash
+for f in Fichiers/graphes/numeros/*.txt; do
+    ./fil_rouge_1_matrix -i "$f" -o "output/$(basename "$f" .txt).dot"
+done
+```
+
