@@ -7,6 +7,48 @@
 #include <string.h>
 
 #define TOKEN_MAX 256
+/*
+========================
+ Compilation
+========================
+gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c \-o fil_rouge_2 -o fil_rouge_2
+    -o fil_rouge_2
+*/
+
+/*
+========================
+ Utilisation
+========================
+./fil_rouge_2 -i <fichier_graphe> -start <sommet> -goal <sommet>
+Options:
+  -i <fichier_graphe> : fichier du graphe (sinon stdin)
+  -o <fichier_sortie> : fichier de sortie (sinon stdout)
+  -start <sommet>     : sommet de depart (numero ou nom)
+  -goal <sommet>      : sommet d'arrivee (numero ou nom)
+*/
+
+/* ---------- Piles / listes (API prof, définie dans base_fil_rouge.c) ---------- */
+typedef struct node {
+  t_vertex val;
+  struct node *p_next;
+} t_node;
+
+typedef t_node *t_list;
+typedef t_list t_stack;
+
+// Piles
+t_stack *stack_new();
+int stack_is_empty(t_stack *ps);
+void stack_push(t_vertex e, t_stack *ps);
+t_vertex stack_pop(t_stack *ps);
+t_vertex stack_top(t_stack *ps);
+
+// Listes / curseurs
+t_list list_free(t_list l);
+t_node *list_cursor_new(t_list l);
+int list_cursor_at_end(t_node *lc);
+int list_cursor_get_val(t_node *lc);
+t_node *list_cursor_next(t_node *lc);
 
 static void usage(const char *prog) {
   fprintf(stderr,
@@ -44,7 +86,7 @@ static int detect_format(const char *filename) {
     char tag = '\0';
     int r = sscanf(p, "%d %c", &n, &tag);
     fclose(f);
-    if (r >= 2 && tag == 'n') return 2;
+    if (r >= 2 && (tag == 'n' || tag == 'N')) return 2;
     return 1;
   }
 
@@ -75,166 +117,147 @@ static int parse_vertex(const t_graph *g, const char *s, t_vertex *out) {
   return 0;
 }
 
-/* ---------- DFS (récursif) ---------- */
-struct dfs_ctx {
+/* Recherche de chemin (fonction récursive)
+   Retourne VRAI si un chemin de x vers y existe,
+   et empile le chemin dans stack (de y vers x).
+*/
+struct rr_ctx {
   const t_graph *g;
-  t_vertex goal;
-  int *mark;
-  t_vertex *parent;
-  int found;
+  t_vertex y;
+  t_bool *marking;
+  t_stack *stack;
+  t_bool found;
 };
 
-static void dfs_visit(t_vertex u, struct dfs_ctx *ctx);
+static t_bool Recherche_recur_f(const t_graph *g, t_vertex x, t_vertex y,
+                                t_bool *marking, t_stack *stack);
 
-struct succ_ctx {
-  struct dfs_ctx *ctx;
-  t_vertex u; // sommet courant (parent des successeurs)
-};
-
-static void succ_cb(t_vertex v, void *p) {
-  struct succ_ctx *sc = (struct succ_ctx *)p;
-  struct dfs_ctx *ctx = sc->ctx;
-
+static void rr_succ_cb(t_vertex w, void *p) {
+  struct rr_ctx *ctx = (struct rr_ctx *)p;
   if (ctx->found) return;
-  if (ctx->mark[v]) return;
 
-  ctx->parent[v] = sc->u;
-  dfs_visit(v, ctx);
+  if (Recherche_recur_f(ctx->g, w, ctx->y, ctx->marking, ctx->stack)) {
+    ctx->found = 1;
+  }
 }
 
-static void dfs_visit(t_vertex u, struct dfs_ctx *ctx) {
-  if (ctx->found) return;
-  ctx->mark[u] = 1;
-
-  if (u == ctx->goal) {
-    ctx->found = 1;
-    return;
+/* Recherche de chemin (récursif) — compatible avec graph_for_each_succ */
+static t_bool Recherche_recur_f(const t_graph *g,
+                                t_vertex x,
+                                t_vertex y,
+                                t_bool *marking,
+                                t_stack *stack) {
+  if (x == y) {                // si x = y
+    stack_push(x, stack);      // empiler x
+    return 1;                  // VRAI
   }
 
-  struct succ_ctx sc = { ctx, u };
-  graph_for_each_succ(ctx->g, u, succ_cb, &sc);
+  if (marking[x]) return 0;    // déjà visité
+  marking[x] = 1;              // marquer x
+
+  struct rr_ctx ctx = { g, y, marking, stack, 0 };
+
+  // pour chaque successeur w de x
+  graph_for_each_succ(g, x, rr_succ_cb, &ctx);
+
+  if (ctx.found) {             // si trouvé
+    stack_push(x, stack);      // empiler x (au retour)
+    return 1;
+  }
+
+  return 0;                    // FAUX
 }
 
-/* ---------- Print path ---------- */
+static t_bool Recherche_recur(const t_graph *g, t_vertex x, t_vertex y, t_stack **out_stack) {
+  int n = graph_size(g);
+  t_bool *marking = calloc((size_t)n, sizeof(*marking));
+  assert(marking);
+
+  t_stack *stack = stack_new();
+  t_bool ok = Recherche_recur_f(g, x, y, marking, stack);
+
+  free(marking);
+
+  if (ok) {
+    *out_stack = stack;
+  } else {
+    *stack = list_free(*stack);
+    free(stack);
+    *out_stack = NULL;
+  }
+  return ok;
+}
+
+
+/* ---------- Affichage du chemin ---------- */
 static void print_vertex(FILE *out, const t_graph *g, t_vertex v) {
   const char *name = graph_vertex_name(g, v);
   if (name) fprintf(out, "%s", name);
   else fprintf(out, "%d", v);
 }
 
-static void print_path(FILE *out, const t_graph *g, t_vertex start, t_vertex goal, const t_vertex *parent) {
-  int n = graph_size(g);
-  t_vertex *rev = malloc((size_t)n * sizeof(*rev));
-  assert(rev);
-
-  int len = 0;
-  for (t_vertex cur = goal; cur != -1 && len < n; cur = parent[cur]) {
-    rev[len++] = cur;
-    if (cur == start) break;
-  }
-
-  if (len == 0 || rev[len - 1] != start) {
-    fprintf(out, "Aucun chemin trouve.\n");
-    free(rev);
-    return;
-  }
-
-  for (int i = len - 1; i >= 0; --i) {
-    print_vertex(out, g, rev[i]);
-    if (i) fprintf(out, " -> ");
+static void print_path_stack(FILE *out, const t_graph *g, t_stack *stack) {
+  // La pile contient déjà [start, ..., goal] dans l'ordre (tête -> queue)
+  t_node *lc = list_cursor_new(*stack);
+  int first = 1;
+  while (!list_cursor_at_end(lc)) {
+    t_vertex v = (t_vertex)list_cursor_get_val(lc);
+    if (!first) fprintf(out, " -> ");
+    first = 0;
+    print_vertex(out, g, v);
+    lc = list_cursor_next(lc);
   }
   fprintf(out, "\n");
-  free(rev);
 }
 
 int main(int argc, char **argv) {
-  const char *infile = NULL;
-  const char *outfile = NULL;
-  const char *start_s = NULL;
-  const char *goal_s = NULL;
+  const char *infile = NULL, *outfile = NULL;
+  const char *start_s = NULL, *goal_s = NULL;
 
   for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "-i") == 0 && i + 1 < argc) infile = argv[++i];
-    else if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) outfile = argv[++i];
-    else if (strcmp(argv[i], "-start") == 0 && i + 1 < argc) start_s = argv[++i];
-    else if (strcmp(argv[i], "-goal") == 0 && i + 1 < argc) goal_s = argv[++i];
-    else {
-      fprintf(stderr, "Argument non reconnu: %s\n", argv[i]);
-      usage(argv[0]);
-      return EXIT_FAILURE;
-    }
+    if      (!strcmp(argv[i], "-i")     && i + 1 < argc) infile  = argv[++i];
+    else if (!strcmp(argv[i], "-o")     && i + 1 < argc) outfile = argv[++i];
+    else if (!strcmp(argv[i], "-start") && i + 1 < argc) start_s = argv[++i];
+    else if (!strcmp(argv[i], "-goal")  && i + 1 < argc) goal_s  = argv[++i];
+    else { usage(argv[0]); return EXIT_FAILURE; }
   }
 
- 
   t_bool use_matrix = 0;
 
   int format = detect_format(infile);
-  t_graph *g = (format == 2) ? graph_read_format2(infile, use_matrix)
-                            : graph_read_format1(infile, use_matrix);
-
-  if (!g) {
-    fprintf(stderr, "Erreur: lecture du graphe impossible.\n");
-    return EXIT_FAILURE;
+  t_graph *g;
+  if (format == 2) {
+    g = graph_read_format2(infile, use_matrix);
+  } else {
+    g = graph_read_format1(infile, use_matrix);
   }
+
+  if (!g) { fprintf(stderr, "Erreur: lecture du graphe impossible.\n"); return EXIT_FAILURE; }
 
   char buf_start[TOKEN_MAX], buf_goal[TOKEN_MAX];
-  if (!start_s) {
-    if (!read_token_stdin(buf_start, sizeof(buf_start))) {
-      fprintf(stderr, "Erreur: impossible de lire -start depuis stdin.\n");
-      graph_free(g);
-      return EXIT_FAILURE;
-    }
-    start_s = buf_start;
-  }
-  if (!goal_s) {
-    if (!read_token_stdin(buf_goal, sizeof(buf_goal))) {
-      fprintf(stderr, "Erreur: impossible de lire -goal depuis stdin.\n");
-      graph_free(g);
-      return EXIT_FAILURE;
-    }
-    goal_s = buf_goal;
-  }
+  if (!start_s) { if (!read_token_stdin(buf_start, sizeof buf_start)) { fprintf(stderr, "Erreur: lire start.\n"); graph_free(g); return EXIT_FAILURE; } start_s = buf_start; }
+  if (!goal_s)  { if (!read_token_stdin(buf_goal,  sizeof buf_goal))  { fprintf(stderr, "Erreur: lire goal.\n");  graph_free(g); return EXIT_FAILURE; } goal_s  = buf_goal;  }
 
-  t_vertex start = -1, goal = -1;
-  if (!parse_vertex(g, start_s, &start)) {
-    fprintf(stderr, "Sommet de depart invalide: %s\n", start_s);
-    graph_free(g);
-    return EXIT_FAILURE;
-  }
-  if (!parse_vertex(g, goal_s, &goal)) {
-    fprintf(stderr, "Sommet d'arrivee invalide: %s\n", goal_s);
-    graph_free(g);
-    return EXIT_FAILURE;
-  }
-
-  int n = graph_size(g);
-  int *mark = calloc((size_t)n, sizeof(*mark));
-  t_vertex *parent = malloc((size_t)n * sizeof(*parent));
-  assert(mark && parent);
-  for (int i = 0; i < n; i++) parent[i] = -1;
-
-  struct dfs_ctx ctx = { g, goal, mark, parent, 0 };
-  dfs_visit(start, &ctx);
+  t_vertex start, goal;
+  if (!parse_vertex(g, start_s, &start)) { fprintf(stderr, "Start invalide: %s\n", start_s); graph_free(g); return EXIT_FAILURE; }
+  if (!parse_vertex(g, goal_s,  &goal))  { fprintf(stderr, "Goal invalide: %s\n",  goal_s);  graph_free(g); return EXIT_FAILURE; }
 
   FILE *out = stdout;
   if (outfile && strcmp(outfile, "-") != 0) {
     out = fopen(outfile, "w");
-    if (!out) {
-      fprintf(stderr, "Impossible d'ouvrir le fichier de sortie %s\n", outfile);
-      free(mark);
-      free(parent);
-      graph_free(g);
-      return EXIT_FAILURE;
-    }
+    if (!out) { fprintf(stderr, "Impossible d'ouvrir %s\n", outfile); graph_free(g); return EXIT_FAILURE; }
   }
 
-  if (ctx.found) print_path(out, g, start, goal, parent);
-  else fprintf(out, "Aucun chemin trouve.\n");
+  t_stack *path = NULL;
+  if (Recherche_recur(g, start, goal, &path)) {
+    print_path_stack(out, g, path);
+    *path = list_free(*path);
+    free(path);
+  } else {
+    fprintf(out, "Aucun chemin trouve.\n");
+  }
 
   if (out != stdout) fclose(out);
-
-  free(mark);
-  free(parent);
   graph_free(g);
   return EXIT_SUCCESS;
 }
