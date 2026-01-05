@@ -111,7 +111,7 @@ gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge
 ### 7.1 Lecture depuis un fichier, écriture vers un fichier
 
 ```bash
-./fil_rouge_1_matrix -i ex1.txt -o graphe.dot
+./fil_rouge_1_matrix -i Fichiers/graphes/numeros/ex1.txt -o graphe_ex1.dot
 ```
 ### 7.2 Lecture depuis stdin, écriture vers stdout
 
