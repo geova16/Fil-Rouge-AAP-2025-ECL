@@ -111,7 +111,7 @@ gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge
 ### 7.1 Lecture depuis un fichier, écriture vers un fichier
 
 ```bash
-./fil_rouge_1_matrix -i ex1.txt -o graphe.dot
+./fil_rouge_1_matrix -i Fichiers/graphes/numeros/ex1.txt -o graphe_ex1.dot
 ```
 ### 7.2 Lecture depuis stdin, écriture vers stdout
 
@@ -172,3 +172,21 @@ digraph nom_du_graphe {
   "B" -> "C";
   "C" -> "A";
 }
+```
+# 9 Exécution par lots
+Voici comment traiter tous les fichiers d'un dossier en une seule commande, selon votre système d'exploitation.
+
+## 9.1 Sur Windows (PowerShell)
+Idéal pour le terminal par défaut de VS Code sur Windows.
+```c
+Get-ChildItem "Fichiers/graphes/numeros/*.txt" | ForEach-Object {
+    ./fil_rouge_1_matrix -i $_.FullName -o "output/$($_.BaseName).dot"
+}
+```
+## 9.2 Sur Linux
+```bash
+for f in Fichiers/graphes/numeros/*.txt; do
+    ./fil_rouge_1_matrix -i "$f" -o "output/$(basename "$f" .txt).dot"
+done
+```
+
