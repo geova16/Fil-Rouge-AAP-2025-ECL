@@ -17,7 +17,7 @@ gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c -DUSE_MATR
 ## 0. Utilisation
 
 ```c
-./fil_rouge_2 -i Fichiers/graphes/numeros/ex1.txt -start 0 -goal 3
+./fil_rouge_2_matrix -i Fichiers/graphes/numeros/ex1.txt -start 0 -goal 3
 ```
 
 # Programme 2 : Recherche d’un chemin dans un graphe orienté
@@ -197,3 +197,4 @@ Sortie :
 A -> B -> C
 
 ```
+
