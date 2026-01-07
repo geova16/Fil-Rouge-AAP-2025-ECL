@@ -1,0 +1,4 @@
+- Mettre graph.h, graph.c, CFC_graphe.c et les fichiers txt des graphes dans un même dossier 
+- Penser à changer dans graph.c et CFC_graphe.c le MAX_READ 
+- Changer le nom du fichier et utiliser 1 (matrice) ou 0 (liste) 
+- Taper cette commande “gcc CFC_graphe.c graph.c  -o CFC_graphe” puis exécuter le programme 

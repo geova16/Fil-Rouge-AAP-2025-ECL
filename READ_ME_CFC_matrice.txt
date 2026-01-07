@@ -1,0 +1,1 @@
+Pour exécuter le programme, il suffit de le compiler et de l'exécuter. Il ne lit pas les graphes, il fonctionne uniquement avec l'exemple du cours (dans la fonction main). 
