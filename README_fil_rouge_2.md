@@ -11,7 +11,7 @@ gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c -DUSE_MATR
 ### 0.2 Version Listes d’adjacence
 
 ```c
-gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c -DUSE_MATRIX=1 -o fil_rouge_2_list
+gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c -DUSE_MATRIX=0 -o fil_rouge_2_list
 ```
 
 ## 0. Utilisation
@@ -195,4 +195,5 @@ Sortie :
 
 ```
 A -> B -> C
+
 ```
