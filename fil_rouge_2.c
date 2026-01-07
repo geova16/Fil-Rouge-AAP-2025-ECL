@@ -12,7 +12,6 @@
  Compilation
 ========================
 gcc -Wall -Wextra -std=c11 -O2 fil_rouge_2.c graph.c base_fil_rouge.c \-o fil_rouge_2 -o fil_rouge_2
-    -o fil_rouge_2
 */
 
 /*
