@@ -1,3 +1,20 @@
+## 0. Compilation
+
+### 0.1 Version Matrice d’adjacence
+```bash
+gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=1 -o fil_rouge_1_matrix
+```
+### 0.2 Version Listes d’adjacence
+```bash
+gcc -Wall -Wextra -std=c11 -O2 fil_rouge_1.c graph.c -DUSE_MATRIX=0 -o fil_rouge_1_list
+```
+## 0. Utilisation
+
+```bash
+./fil_rouge_1_matrix -i Fichiers/graphes/numeros/ex1.txt -o graphe_ex1.dot
+```
+REMARQUE : N'oubliez pas de remplacer le nom du programme fil_rouge_1_matrix par list lorsque vous utilisez la version list.
+
 # Programme 1 : Conversion Graphe → DOT
 
 ## 1. Objectif
@@ -15,13 +32,9 @@ Le Programme 1 doit être livré en **deux versions** (matrice et listes), confo
 - `fil_rouge_1.c`  
   Programme principal : parse les arguments, lit le graphe via `graph.c`, puis écrit le DOT.
 - `graph.h`  
-  Interface (API) du graphe.
+  Interface du graphe.
 - `graph.c`  
   Implémentation : création/libération, ajout d’arêtes, parcours des successeurs, lecture format 1/2, etc.
-
-> ⚠️ Important : Vérifiez que `graph.h` se termine correctement par :
-> `#endif // GRAPH_H`
-> (et **pas** `#endif ... #include "graph.h"` sur la même ligne).
 
 ---
 
